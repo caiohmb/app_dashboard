@@ -1,8 +1,20 @@
+import { redirect } from "next/navigation"
+import { headers } from "next/headers"
+import { auth } from "@/lib/auth"
 import { GalleryVerticalEnd } from "lucide-react"
-
 import { LoginForm } from "@/components/login-form"
 
-export default function LoginPage() {
+export default async function LoginPage() {
+  const headersList = await headers()
+  const session = await auth.api.getSession({
+    headers: headersList
+  })
+
+  // Se já está logado, redireciona para dashboard
+  // Better Auth retorna null se não houver sessão
+  if (session) {
+    redirect("/dashboard")
+  }
   return (
     <div className="grid min-h-svh lg:grid-cols-2">
       <div className="flex flex-col gap-4 p-6 md:p-10">

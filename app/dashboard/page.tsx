@@ -1,5 +1,6 @@
-"use client"
-
+import { redirect } from "next/navigation"
+import { headers } from "next/headers"
+import { auth } from "@/lib/auth"
 import { AppSidebar } from "@/components/app-sidebar"
 import { ChartAreaInteractive } from "@/components/chart-area-interactive"
 import { DataTable } from "@/components/data-table"
@@ -12,7 +13,16 @@ import {
 
 import data from "./data.json"
 
-export default function Page() {
+export default async function Page() {
+  const headersList = await headers()
+  const session = await auth.api.getSession({
+    headers: headersList
+  })
+
+  // Better Auth retorna null se não houver sessão
+  if (!session) {
+    redirect("/login")
+  }
   return (
     <SidebarProvider
       style={

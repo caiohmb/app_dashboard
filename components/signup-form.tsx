@@ -20,14 +20,14 @@ import { Input } from "@/components/ui/input"
 // Schema de validação Zod
 const signupSchema = z.object({
   name: z.string().min(2, { message: "Nome deve ter pelo menos 2 caracteres" }),
-  email: z.string().email({ message: "Email inválido" }),
+  email: z.string().min(1, { message: "Email é obrigatório" }).email({ message: "Email inválido" }),
   password: z
     .string()
     .min(8, { message: "Senha deve ter pelo menos 8 caracteres" })
     .regex(/[A-Z]/, { message: "Senha deve conter pelo menos uma letra maiúscula" })
     .regex(/[a-z]/, { message: "Senha deve conter pelo menos uma letra minúscula" })
     .regex(/[0-9]/, { message: "Senha deve conter pelo menos um número" }),
-  confirmPassword: z.string(),
+  confirmPassword: z.string().min(1, { message: "Confirmação de senha é obrigatória" }),
 }).refine((data) => data.password === data.confirmPassword, {
   message: "As senhas não coincidem",
   path: ["confirmPassword"],
@@ -51,29 +51,27 @@ export function SignupForm({
   })
 
   const onSubmit = async (data: SignupFormData) => {
-    setIsLoading(true)
-    setError(null)
-
-    try {
-      const result = await authClient.signUp.email({
+    await authClient.signUp.email(
+      {
         email: data.email,
         password: data.password,
         name: data.name,
-      })
-
-      if (result.error) {
-        setError(result.error.message || "Erro ao criar conta")
-        return
+      },
+      {
+        onRequest: () => {
+          setIsLoading(true)
+          setError(null)
+        },
+        onSuccess: () => {
+          // Better Auth faz auto sign-in após signup
+          window.location.href = "/dashboard"
+        },
+        onError: (ctx) => {
+          setError(ctx.error.message || "Erro ao criar conta")
+          setIsLoading(false)
+        },
       }
-
-      // Redirecionar para dashboard ou login
-      window.location.href = "/dashboard"
-    } catch (err) {
-      setError("Erro inesperado. Tente novamente.")
-      console.error(err)
-    } finally {
-      setIsLoading(false)
-    }
+    )
   }
 
   return (

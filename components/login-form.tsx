@@ -19,7 +19,7 @@ import { Input } from "@/components/ui/input"
 
 // Schema de validação Zod
 const loginSchema = z.object({
-  email: z.string().email({ message: "Email inválido" }),
+  email: z.string().min(1, { message: "Email é obrigatório" }).email({ message: "Email inválido" }),
   password: z.string().min(1, { message: "Senha é obrigatória" }),
 })
 
@@ -41,28 +41,25 @@ export function LoginForm({
   })
 
   const onSubmit = async (data: LoginFormData) => {
-    setIsLoading(true)
-    setError(null)
-
-    try {
-      const result = await authClient.signIn.email({
+    await authClient.signIn.email(
+      {
         email: data.email,
         password: data.password,
-      })
-
-      if (result.error) {
-        setError(result.error.message || "Email ou senha incorretos")
-        return
+      },
+      {
+        onRequest: () => {
+          setIsLoading(true)
+          setError(null)
+        },
+        onSuccess: () => {
+          window.location.href = "/dashboard"
+        },
+        onError: (ctx) => {
+          setError(ctx.error.message || "Email ou senha incorretos")
+          setIsLoading(false)
+        },
       }
-
-      // Redirecionar para dashboard
-      window.location.href = "/dashboard"
-    } catch (err) {
-      setError("Erro ao fazer login. Tente novamente.")
-      console.error(err)
-    } finally {
-      setIsLoading(false)
-    }
+    )
   }
 
   return (
