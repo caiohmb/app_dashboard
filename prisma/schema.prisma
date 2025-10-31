@@ -14,62 +14,69 @@ datasource db {
 }
 
 model User {
-  id            String    @id
+  id            String       @id
   name          String
   email         String
-  emailVerified Boolean   @default(false)
+  emailVerified Boolean      @default(false)
   image         String?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @default(now()) @updatedAt
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @default(now()) @updatedAt
   sessions      Session[]
   accounts      Account[]
   metrics       UserMetrics?
   activities    Activity[]
+
+  role       String?
+  banned     Boolean?  @default(false)
+  banReason  String?
+  banExpires DateTime?
 
   @@unique([email])
   @@map("user")
 }
 
 // Métricas do usuário para o dashboard
+
 model UserMetrics {
-  id               String   @id @default(cuid())
-  userId           String   @unique
-  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id     String @id @default(cuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   // Métricas financeiras
-  totalRevenue     Float    @default(0)
-  revenueChange    Float    @default(0) // Percentual de mudança
+  totalRevenue  Float @default(0)
+  revenueChange Float @default(0) // Percentual de mudança
 
   // Métricas de clientes
-  totalCustomers   Int      @default(0)
-  customersChange  Float    @default(0) // Percentual de mudança
+  totalCustomers  Int   @default(0)
+  customersChange Float @default(0) // Percentual de mudança
 
   // Métricas de contas ativas
-  activeAccounts   Int      @default(0)
-  accountsChange   Float    @default(0) // Percentual de mudança
+  activeAccounts Int   @default(0)
+  accountsChange Float @default(0) // Percentual de mudança
 
   // Taxa de crescimento
-  growthRate       Float    @default(0)
-  growthChange     Float    @default(0) // Percentual de mudança
+  growthRate   Float @default(0)
+  growthChange Float @default(0) // Percentual de mudança
 
   // Timestamps
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@map("user_metrics")
 }
 
 // Atividades do usuário para histórico
+
 model Activity {
-  id          String   @id @default(cuid())
-  userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  type        String   // "login", "profile_update", "data_export", etc.
+  type        String // "login", "profile_update", "data_export", etc.
   description String
-  metadata    Json?    // Dados adicionais da atividade
+  metadata    Json? // Dados adicionais da atividade
 
-  createdAt   DateTime @default(now())
+  createdAt DateTime @default(now())
 
   @@map("activity")
   @@index([userId, createdAt])
@@ -85,6 +92,8 @@ model Session {
   userAgent String?
   userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  impersonatedBy String?
 
   @@unique([token])
   @@map("session")

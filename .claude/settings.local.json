@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx @better-auth/cli:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

@@ -2,11 +2,25 @@ import { betterAuth } from "better-auth";
 import { prisma } from "./prisma";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import { sendEmail } from "./email";
+import { admin } from "better-auth/plugins";
+import { ac, admin as adminRole, user, superadmin } from "./permissions";
 
 export const auth = betterAuth({
     database: prismaAdapter(prisma, {
         provider: "postgresql",
     }),
+    plugins: [
+        admin({
+            defaultRole: "user",
+            adminRoles: ["admin", "superadmin"],
+            impersonationSessionDuration: 60 * 60, // 1 hora
+            defaultBanReason: "Violação dos termos de uso",
+            defaultBanExpiresIn: 60 * 60 * 24 * 7, // 7 dias
+            bannedUserMessage: "Sua conta foi suspensa. Entre em contato com o suporte.",
+            ac, // Sistema de controle de acesso customizado
+            roles: { admin: adminRole, user, superadmin }, // Roles customizadas
+        })
+    ],
     emailAndPassword: {
         enabled: true,
         requireEmailVerification: true, // Requer verificação de email
