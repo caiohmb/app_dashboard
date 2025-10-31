@@ -5,7 +5,6 @@ import { prisma } from "@/lib/prisma"
 import { AppSidebar } from "@/components/app-sidebar"
 import { SiteHeader } from "@/components/site-header"
 import { ProfileForm } from "@/components/profile-form"
-import { MetricsForm } from "@/components/metrics-form"
 import {
   SidebarInset,
   SidebarProvider,
@@ -33,7 +32,6 @@ export default async function ProfilePage() {
   const user = await prisma.user.findUnique({
     where: { id: session.user.id },
     include: {
-      metrics: true,
       activities: {
         orderBy: { createdAt: 'desc' },
         take: 10
@@ -63,13 +61,13 @@ export default async function ProfilePage() {
               <div>
                 <h1 className="text-2xl font-semibold">Perfil do Usuário</h1>
                 <p className="text-muted-foreground">
-                  Gerencie suas informações pessoais e métricas do dashboard
+                  Gerencie suas informações pessoais
                 </p>
               </div>
 
               <Separator />
 
-              <div className="grid gap-6 lg:grid-cols-2">
+              <div className="grid gap-6 max-w-2xl">
                 <Card>
                   <CardHeader>
                     <CardTitle>Informações Pessoais</CardTitle>
@@ -79,18 +77,6 @@ export default async function ProfilePage() {
                   </CardHeader>
                   <CardContent>
                     <ProfileForm user={user} />
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Métricas do Dashboard</CardTitle>
-                    <CardDescription>
-                      Configure suas métricas e estatísticas
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <MetricsForm metrics={user.metrics} userId={user.id} />
                   </CardContent>
                 </Card>
               </div>
