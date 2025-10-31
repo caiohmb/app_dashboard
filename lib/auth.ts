@@ -10,6 +10,33 @@ export const auth = betterAuth({
     emailAndPassword: {
         enabled: true,
         requireEmailVerification: true, // Requer verificação de email
+        sendResetPassword: async ({ user, url }) => {
+            await sendEmail({
+                to: user.email,
+                subject: "Redefinir sua senha - Acme Inc.",
+                text: `Olá ${user.name},\n\nRecebemos uma solicitação para redefinir sua senha.\n\nClique no link para redefinir: ${url}\n\nEste link expira em 1 hora.\n\nSe você não solicitou esta redefinição, ignore este email.`,
+                html: `
+                    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                        <h2>Redefinir sua senha</h2>
+                        <p>Olá <strong>${user.name}</strong>,</p>
+                        <p>Recebemos uma solicitação para redefinir a senha da sua conta.</p>
+                        <p>Clique no botão abaixo para criar uma nova senha:</p>
+                        <a href="${url}" style="display: inline-block; background-color: #000; color: #fff; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin: 16px 0;">
+                            Redefinir Senha
+                        </a>
+                        <p>Ou copie e cole este link no seu navegador:</p>
+                        <p style="color: #666; font-size: 14px; word-break: break-all;">${url}</p>
+                        <p style="color: #e74c3c; font-size: 14px; margin-top: 24px;">
+                            <strong>Este link expira em 1 hora.</strong>
+                        </p>
+                        <p style="color: #999; font-size: 12px; margin-top: 32px;">
+                            Se você não solicitou esta redefinição de senha, ignore este email. Sua senha permanecerá inalterada.
+                        </p>
+                    </div>
+                `,
+            });
+        },
+        resetPasswordTokenExpiresIn: 3600, // 1 hora
     },
     emailVerification: {
         sendVerificationEmail: async ({ user, url }) => {

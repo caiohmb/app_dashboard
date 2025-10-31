@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation"
 import { headers } from "next/headers"
 import { auth } from "@/lib/auth"
+import { prisma } from "@/lib/prisma"
 import { AppSidebar } from "@/components/app-sidebar"
 import { ChartAreaInteractive } from "@/components/chart-area-interactive"
 import { DataTable } from "@/components/data-table"
@@ -23,6 +24,29 @@ export default async function Page() {
   if (!session) {
     redirect("/login")
   }
+
+  // Busca ou cria as métricas do usuário
+  let metrics = await prisma.userMetrics.findUnique({
+    where: { userId: session.user.id }
+  })
+
+  // Se não existir, cria métricas padrão para o usuário
+  if (!metrics) {
+    metrics = await prisma.userMetrics.create({
+      data: {
+        userId: session.user.id,
+        totalRevenue: 1250.00,
+        revenueChange: 12.5,
+        totalCustomers: 1234,
+        customersChange: -20,
+        activeAccounts: 45678,
+        accountsChange: 12.5,
+        growthRate: 4.5,
+        growthChange: 4.5,
+      }
+    })
+  }
+
   return (
     <SidebarProvider
       style={
@@ -38,7 +62,7 @@ export default async function Page() {
         <div className="flex flex-1 flex-col">
           <div className="@container/main flex flex-1 flex-col gap-2">
             <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
-              <SectionCards />
+              <SectionCards metrics={metrics} />
               <div className="px-4 lg:px-6">
                 <ChartAreaInteractive />
               </div>
