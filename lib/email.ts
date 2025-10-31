@@ -30,9 +30,14 @@ export async function sendEmail(options: SendEmailOptions) {
       console.log("=====================================\n")
     }
 
+    // Determina o endereço "from" baseado no ambiente
+    // Em produção, usa o domínio verificado via variável de ambiente
+    // Em desenvolvimento, usa o email de teste do Resend
+    const fromEmail = process.env.RESEND_FROM_EMAIL || "onboarding@resend.dev"
+
     // Envia email via Resend
     const { data, error } = await resend.emails.send({
-      from: "Acme Inc <onboarding@resend.dev>", // Use seu domínio verificado em produção
+      from: fromEmail,
       to: emailToSend,
       subject: isDevelopment ? `[DEV: ${options.to}] ${options.subject}` : options.subject,
       html: options.html || options.text,
