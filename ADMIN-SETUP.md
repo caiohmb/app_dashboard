@@ -2,7 +2,7 @@
 
 ## Status da Implementação
 
-### ✅ Concluído - Configuração Inicial
+### ✅ Concluído - Configuração Inicial (Rodada 1)
 
 1. **Plugin Admin Instalado**
    - Servidor: [lib/auth.ts](lib/auth.ts#L13-L22)
@@ -23,6 +23,33 @@
 4. **Schema do Banco de Dados**
    - Migração aplicada com sucesso
    - Novas tabelas: permissões, roles, bans
+
+### ✅ Concluído - Interface Admin Básica (Rodada 2)
+
+5. **Middleware de Proteção**
+   - Arquivo: [middleware.ts](middleware.ts)
+   - Protege rotas `/dashboard/admin/*`
+   - Redireciona não-autorizados para login
+   - Redireciona não-admins para dashboard
+
+6. **Layout Admin**
+   - Arquivo: [app/dashboard/admin/layout.tsx](app/dashboard/admin/layout.tsx)
+   - Usa AppSidebar e SiteHeader padrão
+   - Dupla verificação de segurança server-side
+
+7. **Dashboard Admin**
+   - Arquivo: [app/dashboard/admin/page.tsx](app/dashboard/admin/page.tsx)
+   - Métricas: Total de usuários, verificados, ativos, banidos
+   - Lista de usuários recentes
+   - Links rápidos para gerenciamento
+
+8. **Sidebar Admin**
+   - Link "Admin" visível apenas para admins
+   - Usa hook `useIsAdmin()` para verificação client-side
+   - Ícone IconShieldCheck
+
+9. **Componentes UI**
+   - [components/admin/role-badge.tsx](components/admin/role-badge.tsx) - Badge colorido por role
 
 ## Como Criar o Primeiro Admin
 

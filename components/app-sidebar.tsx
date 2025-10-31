@@ -16,6 +16,7 @@ import {
   IconReport,
   IconSearch,
   IconSettings,
+  IconShieldCheck,
   IconUsers,
 } from "@tabler/icons-react"
 
@@ -24,6 +25,7 @@ import { NavMain } from "@/components/nav-main"
 import { NavSecondary } from "@/components/nav-secondary"
 import { NavUser } from "@/components/nav-user"
 import { SidebarThemeToggle } from "@/components/sidebar-theme-toggle"
+import { useIsAdmin } from "@/hooks/use-admin"
 import {
   Sidebar,
   SidebarContent,
@@ -147,6 +149,28 @@ const data = {
 }
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+  const isAdmin = useIsAdmin()
+
+  // Adiciona item Admin se o usuário for admin
+  const navMainWithAdmin = React.useMemo(() => {
+    if (!isAdmin) return data.navMain
+
+    // Verifica se já existe o item Admin
+    const hasAdmin = data.navMain.some(item => item.url === "/dashboard/admin")
+    if (hasAdmin) return data.navMain
+
+    // Adiciona o item Admin após o Dashboard
+    return [
+      data.navMain[0], // Dashboard
+      {
+        title: "Admin",
+        url: "/dashboard/admin",
+        icon: IconShieldCheck,
+      },
+      ...data.navMain.slice(1), // Resto dos itens
+    ]
+  }, [isAdmin])
+
   return (
     <Sidebar collapsible="offcanvas" {...props}>
       <SidebarHeader>
@@ -165,7 +189,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={data.navMain} />
+        <NavMain items={navMainWithAdmin} />
         <NavDocuments items={data.documents} />
         <NavSecondary items={data.navSecondary} className="mt-auto" />
         <SidebarThemeToggle />
