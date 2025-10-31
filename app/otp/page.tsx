@@ -1,11 +1,25 @@
+"use client"
+
+import { useSearchParams } from "next/navigation"
 import { OTPForm } from "@/components/otp-form"
 
 export default function OTPPage() {
+  const searchParams = useSearchParams()
+  const email = searchParams.get("email")
+
+  // Se não tem email, redireciona para signup
+  if (!email) {
+    if (typeof window !== "undefined") {
+      window.location.href = "/signup"
+    }
+    return null
+  }
+
   return (
     <div className="flex min-h-svh w-full">
       <div className="flex w-full items-center justify-center p-6 lg:w-1/2">
         <div className="w-full max-w-xs">
-          <OTPForm />
+          <OTPForm email={email} />
         </div>
       </div>
       <div className="relative hidden w-1/2 lg:block">

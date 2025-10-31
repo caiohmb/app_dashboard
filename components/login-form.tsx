@@ -55,7 +55,16 @@ export function LoginForm({
           window.location.href = "/dashboard"
         },
         onError: (ctx) => {
-          setError(ctx.error.message || "Email ou senha incorretos")
+          // Se erro 403, email não verificado
+          if (ctx.error.status === 403) {
+            setError("Por favor, verifique seu email antes de fazer login")
+            // Redireciona para página OTP após 2 segundos
+            setTimeout(() => {
+              window.location.href = `/otp?email=${encodeURIComponent(data.email)}`
+            }, 2000)
+          } else {
+            setError(ctx.error.message || "Email ou senha incorretos")
+          }
           setIsLoading(false)
         },
       }

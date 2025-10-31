@@ -63,8 +63,8 @@ export function SignupForm({
           setError(null)
         },
         onSuccess: () => {
-          // Better Auth faz auto sign-in após signup
-          window.location.href = "/dashboard"
+          // Com requireEmailVerification: true, redireciona para verificação
+          window.location.href = `/otp?email=${encodeURIComponent(data.email)}`
         },
         onError: (ctx) => {
           setError(ctx.error.message || "Erro ao criar conta")
