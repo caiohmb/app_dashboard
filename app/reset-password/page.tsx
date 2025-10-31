@@ -1,6 +1,7 @@
+import { Suspense } from "react"
 import { ResetPasswordForm } from "@/components/reset-password-form"
 
-export default function ResetPasswordPage() {
+function ResetPasswordContent() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="w-full max-w-md space-y-8">
@@ -13,5 +14,20 @@ export default function ResetPasswordPage() {
         <ResetPasswordForm />
       </div>
     </div>
+  )
+}
+
+export default function ResetPasswordPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="text-center">
+          <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent mx-auto mb-4" />
+          <p className="text-sm text-muted-foreground">Carregando...</p>
+        </div>
+      </div>
+    }>
+      <ResetPasswordContent />
+    </Suspense>
   )
 }
