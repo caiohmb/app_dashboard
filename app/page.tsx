@@ -1,8 +1,16 @@
 import Link from "next/link"
+import { headers } from "next/headers"
+import { auth } from "@/lib/auth"
 import { Button } from "@/components/ui/button"
 import { IconArrowRight, IconChartBar, IconShieldCheck, IconSparkles } from "@tabler/icons-react"
+import { HomeNav } from "@/components/home-nav"
 
-export default function Home() {
+export default async function Home() {
+  const headersList = await headers()
+  const session = await auth.api.getSession({
+    headers: headersList
+  })
+
   return (
     <div className="flex min-h-screen flex-col">
       {/* Header */}
@@ -14,14 +22,7 @@ export default function Home() {
             </div>
             <span className="text-xl font-bold">Acme Inc.</span>
           </div>
-          <nav className="flex items-center gap-4">
-            <Link href="/login">
-              <Button variant="ghost">Login</Button>
-            </Link>
-            <Link href="/signup">
-              <Button>Começar Grátis</Button>
-            </Link>
-          </nav>
+          <HomeNav session={session} />
         </div>
       </header>
 
