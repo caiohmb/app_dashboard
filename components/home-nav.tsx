@@ -14,6 +14,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { IconLogout, IconUser } from "@tabler/icons-react"
 import { authClient } from "@/lib/auth-client"
+import { ModeToggle } from "@/components/mode-toggle"
 
 interface HomeNavProps {
   session: any
@@ -46,9 +47,10 @@ export function HomeNav({ session }: HomeNavProps) {
   if (session?.user) {
     return (
       <nav className="flex items-center gap-3">
-        <Link href="/dashboard">
-          <Button>Ir para Dashboard</Button>
-        </Link>
+        <ModeToggle />
+        <Button asChild>
+          <Link href="/dashboard">Ir para Dashboard</Link>
+        </Button>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="icon" className="rounded-full">
@@ -88,12 +90,13 @@ export function HomeNav({ session }: HomeNavProps) {
   // Se o usuário não estiver logado
   return (
     <nav className="flex items-center gap-4">
-      <Link href="/login">
-        <Button variant="ghost">Login</Button>
-      </Link>
-      <Link href="/signup">
-        <Button>Começar Grátis</Button>
-      </Link>
+      <ModeToggle />
+      <Button variant="ghost" asChild>
+        <Link href="/login">Login</Link>
+      </Button>
+      <Button asChild>
+        <Link href="/signup">Começar Grátis</Link>
+      </Button>
     </nav>
   )
 }
