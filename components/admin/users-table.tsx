@@ -99,7 +99,7 @@ export function UsersTable({
   const handleSearch = React.useCallback(() => {
     const params = new URLSearchParams()
     if (search) params.set("search", search)
-    if (role) params.set("role", role)
+    if (role && role !== "all") params.set("role", role)
     params.set("page", "1")
     router.push(`/dashboard/admin/users?${params.toString()}`)
   }, [search, role, router])
@@ -107,7 +107,7 @@ export function UsersTable({
   const handlePageChange = (newPage: number) => {
     const params = new URLSearchParams()
     if (search) params.set("search", search)
-    if (role) params.set("role", role)
+    if (role && role !== "all") params.set("role", role)
     params.set("page", newPage.toString())
     router.push(`/dashboard/admin/users?${params.toString()}`)
   }
@@ -165,12 +165,12 @@ export function UsersTable({
               onKeyDown={(e) => e.key === "Enter" && handleSearch()}
             />
           </div>
-          <Select value={role} onValueChange={setRole}>
+          <Select value={role || "all"} onValueChange={setRole}>
             <SelectTrigger className="w-[180px]">
               <SelectValue placeholder="Filtrar por role" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">Todas as roles</SelectItem>
+              <SelectItem value="all">Todas as roles</SelectItem>
               <SelectItem value="user">User</SelectItem>
               <SelectItem value="admin">Admin</SelectItem>
               <SelectItem value="superadmin">Super Admin</SelectItem>
