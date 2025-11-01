@@ -1,5 +1,6 @@
 "use client"
 
+import dynamic from "next/dynamic"
 import * as React from "react"
 import { useRouter } from "next/navigation"
 import {
@@ -45,15 +46,15 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { RoleBadge } from "@/components/admin/role-badge"
-import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { CreateUserModal } from "@/components/admin/create-user-modal"
-import { EditUserModal } from "@/components/admin/edit-user-modal"
-import { BanUserModal } from "@/components/admin/ban-user-modal"
-import { DeleteUserDialog } from "@/components/admin/delete-user-dialog"
 import { getInitials } from "@/lib/utils"
 import { unbanUserAction } from "@/app/actions/admin"
 import { toast } from "sonner"
+import { Badge } from "@/components/ui/badge"
+const CreateUserModal = dynamic(() => import("@/components/admin/create-user-modal").then(mod => mod.CreateUserModal))
+const EditUserModal = dynamic(() => import("@/components/admin/edit-user-modal").then(mod => mod.EditUserModal))
+const BanUserModal = dynamic(() => import("@/components/admin/ban-user-modal").then(mod => mod.BanUserModal))
+const DeleteUserDialog = dynamic(() => import("@/components/admin/delete-user-dialog").then(mod => mod.DeleteUserDialog))
 
 interface User {
   id: string

@@ -60,7 +60,7 @@ export function CreateUserModal({
     try {
       const result = await createUserAction({
         ...formData,
-        organizationId: formData.organizationId === "none" ? null : (formData.organizationId || null)
+        organizationId: formData.organizationId === "none" || !formData.organizationId ? undefined : formData.organizationId
       })
 
       if (result.success) {

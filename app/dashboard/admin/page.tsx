@@ -1,15 +1,18 @@
+import { Suspense } from "react"
 import { headers } from "next/headers"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
 import { IconUsers, IconUserCheck, IconUserX, IconActivity, IconBuilding } from "@tabler/icons-react"
+import { QuickActions } from "@/app/dashboard/admin/quick-actions"
+import { RecentUsers } from "@/app/dashboard/admin/recent-users"
+import { RecentUsersSkeleton } from "@/app/dashboard/admin/recent-users-skeleton"
 
 export default async function AdminDashboardPage() {
   const headersList = await headers()
@@ -50,19 +53,6 @@ export default async function AdminDashboardPage() {
       }
     }),
   ])
-
-  // Buscar usuários recentes para atividade
-  const latestUsers = await prisma.user.findMany({
-    orderBy: { createdAt: 'desc' },
-    take: 5,
-    select: {
-      id: true,
-      name: true,
-      email: true,
-      createdAt: true,
-      role: true,
-    }
-  })
 
   const activeUsers = totalUsers - bannedUsersCount
 
@@ -141,98 +131,13 @@ export default async function AdminDashboardPage() {
         </Card>
       </div>
 
-      {/* Usuários Recentes */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Usuários Recentes</CardTitle>
-          <CardDescription>
-            Últimos usuários registrados no sistema
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {latestUsers.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
-              Nenhum usuário registrado ainda
-            </p>
-          ) : (
-            <div className="space-y-4">
-              {latestUsers.map((user) => (
-                <div
-                  key={user.id}
-                  className="flex items-center justify-between rounded-lg border p-4"
-                >
-                  <div className="flex-1">
-                    <p className="font-medium">{user.name}</p>
-                    <p className="text-sm text-muted-foreground">{user.email}</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-sm font-medium">
-                      {user.role || "user"}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {new Date(user.createdAt).toLocaleDateString('pt-BR')}
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
       {/* Ações Rápidas */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Ações Rápidas</CardTitle>
-          <CardDescription>
-            Links para funcionalidades administrativas
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className={`grid gap-4 ${isSuperAdmin ? 'md:grid-cols-3' : 'md:grid-cols-2'}`}>
-            <a
-              href="/dashboard/admin/users"
-              className="flex items-center gap-3 rounded-lg border p-4 transition-colors hover:bg-muted"
-            >
-              <IconUsers className="h-5 w-5" />
-              <div>
-                <p className="font-medium">Gerenciar Usuários</p>
-                <p className="text-sm text-muted-foreground">
-                  Criar, editar e gerenciar usuários
-                </p>
-              </div>
-            </a>
+      <QuickActions isSuperAdmin={isSuperAdmin} />
 
-            <a
-              href="/dashboard/admin/sessions"
-              className="flex items-center gap-3 rounded-lg border p-4 transition-colors hover:bg-muted"
-            >
-              <IconActivity className="h-5 w-5" />
-              <div>
-                <p className="font-medium">Sessões Ativas</p>
-                <p className="text-sm text-muted-foreground">
-                  Ver e gerenciar sessões
-                </p>
-              </div>
-            </a>
-
-            {isSuperAdmin && (
-              <a
-                href="/dashboard/admin/organizations"
-                className="flex items-center gap-3 rounded-lg border p-4 transition-colors hover:bg-muted"
-              >
-                <IconBuilding className="h-5 w-5" />
-                <div>
-                  <p className="font-medium">Organizações</p>
-                  <p className="text-sm text-muted-foreground">
-                    Gerenciar organizações do sistema
-                  </p>
-                </div>
-              </a>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+      {/* Usuários Recentes (Recolhível) */}
+      <Suspense fallback={<RecentUsersSkeleton />}>
+        <RecentUsers />
+      </Suspense>
     </div>
   )
 }
