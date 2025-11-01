@@ -60,7 +60,7 @@ export function CreateUserModal({
     try {
       const result = await createUserAction({
         ...formData,
-        organizationId: formData.organizationId === "none" ? undefined : formData.organizationId || undefined
+        organizationId: formData.organizationId === "none" ? null : (formData.organizationId || null)
       })
 
       if (result.success) {
@@ -94,7 +94,7 @@ export function CreateUserModal({
               <Input
                 id="name"
                 value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
                 placeholder="João Silva"
                 required
               />
@@ -105,7 +105,7 @@ export function CreateUserModal({
                 id="email"
                 type="email"
                 value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
                 placeholder="joao@exemplo.com"
                 required
               />
@@ -116,7 +116,7 @@ export function CreateUserModal({
                 id="password"
                 type="password"
                 value={formData.password}
-                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
                 placeholder="••••••••"
                 required
                 minLength={8}
@@ -127,7 +127,7 @@ export function CreateUserModal({
                 <Label htmlFor="organization">Organização</Label>
                 <Select
                   value={formData.organizationId}
-                  onValueChange={(value) => setFormData({ ...formData, organizationId: value })}
+                  onValueChange={(value) => setFormData(prev => ({ ...prev, organizationId: value }))}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Selecione uma organização (opcional)" />
@@ -147,7 +147,7 @@ export function CreateUserModal({
               <Label htmlFor="role">Role</Label>
               <Select
                 value={formData.role}
-                onValueChange={(value) => setFormData({ ...formData, role: value })}
+                onValueChange={(value) => setFormData(prev => ({ ...prev, role: value }))}
               >
                 <SelectTrigger>
                   <SelectValue />

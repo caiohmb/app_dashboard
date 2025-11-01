@@ -51,6 +51,7 @@ import { CreateUserModal } from "@/components/admin/create-user-modal"
 import { EditUserModal } from "@/components/admin/edit-user-modal"
 import { BanUserModal } from "@/components/admin/ban-user-modal"
 import { DeleteUserDialog } from "@/components/admin/delete-user-dialog"
+import { getInitials } from "@/lib/utils"
 import { unbanUserAction } from "@/app/actions/admin"
 import { toast } from "sonner"
 
@@ -86,6 +87,7 @@ interface UsersTableProps {
   totalUsers: number
   searchQuery: string
   roleFilter: string
+  organizationFilter: string
   isSuperAdmin: boolean
   organizations: Organization[]
 }
@@ -97,6 +99,7 @@ export function UsersTable({
   totalUsers,
   searchQuery,
   roleFilter,
+  organizationFilter,
   isSuperAdmin,
   organizations,
 }: UsersTableProps) {
@@ -104,6 +107,7 @@ export function UsersTable({
   const [search, setSearch] = React.useState(searchQuery)
   const [role, setRole] = React.useState(roleFilter)
 
+  const [organization, setOrganization] = React.useState(organizationFilter)
   // Modals state
   const [createModalOpen, setCreateModalOpen] = React.useState(false)
   const [editModalOpen, setEditModalOpen] = React.useState(false)
@@ -112,29 +116,22 @@ export function UsersTable({
   const [selectedUser, setSelectedUser] = React.useState<User | null>(null)
   const [unbanning, setUnbanning] = React.useState<string | null>(null)
 
-  const handleSearch = React.useCallback(() => {
+  const updateUrl = React.useCallback((filters: { page?: number; search?: string; role?: string; organizationId?: string }) => {
     const params = new URLSearchParams()
-    if (search) params.set("search", search)
-    if (role && role !== "all") params.set("role", role)
-    params.set("page", "1")
+    const currentSearch = filters.search !== undefined ? filters.search : search
+    const currentRole = filters.role !== undefined ? filters.role : role
+    const currentOrg = filters.organizationId !== undefined ? filters.organizationId : organization
+
+    if (currentSearch) params.set("search", currentSearch)
+    if (currentRole && currentRole !== "all") params.set("role", currentRole)
+    if (currentOrg && currentOrg !== "all") params.set("organizationId", currentOrg)
+    params.set("page", (filters.page || 1).toString())
+
     router.push(`/dashboard/admin/users?${params.toString()}`)
-  }, [search, role, router])
+  }, [search, role, organization, router])
 
   const handlePageChange = (newPage: number) => {
-    const params = new URLSearchParams()
-    if (search) params.set("search", search)
-    if (role && role !== "all") params.set("role", role)
-    params.set("page", newPage.toString())
-    router.push(`/dashboard/admin/users?${params.toString()}`)
-  }
-
-  const getInitials = (name: string) => {
-    return name
-      .split(" ")
-      .map((n) => n[0])
-      .join("")
-      .toUpperCase()
-      .slice(0, 2)
+    updateUrl({ page: newPage })
   }
 
   const handleUnban = async (userId: string) => {
@@ -153,6 +150,20 @@ export function UsersTable({
       setUnbanning(null)
     }
   }
+
+  const handleFilterChange = (key: 'role' | 'organizationId', value: string) => {
+    const newFilters = { page: 1, role, organizationId: organization }
+    if (key === 'role') {
+      setRole(value)
+      newFilters.role = value
+    } else if (key === 'organizationId') {
+      setOrganization(value)
+      newFilters.organizationId = value
+    }
+    updateUrl(newFilters)
+  }
+
+
 
   return (
     <Card>
@@ -178,10 +189,10 @@ export function UsersTable({
               placeholder="Buscar por nome ou email..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+              onKeyDown={(e) => e.key === "Enter" && updateUrl({ search })}
             />
           </div>
-          <Select value={role || "all"} onValueChange={setRole}>
+          <Select value={role || "all"} onValueChange={(value) => handleFilterChange('role', value)}>
             <SelectTrigger className="w-[180px]">
               <SelectValue placeholder="Filtrar por role" />
             </SelectTrigger>
@@ -192,7 +203,23 @@ export function UsersTable({
               <SelectItem value="superadmin">Super Admin</SelectItem>
             </SelectContent>
           </Select>
-          <Button onClick={handleSearch}>
+          {isSuperAdmin && (
+            <Select value={organization || "all"} onValueChange={(value) => handleFilterChange('organizationId', value)}>
+              <SelectTrigger className="w-[220px]">
+                <SelectValue placeholder="Filtrar por organização" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas as organizações</SelectItem>
+                {organizations.map((org) => (
+                  <SelectItem key={org.id} value={org.id}>
+                    {org.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+
+          <Button onClick={() => updateUrl({ search })}>
             <IconSearch className="h-4 w-4" />
           </Button>
         </div>

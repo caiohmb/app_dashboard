@@ -1,5 +1,6 @@
 "use client"
 
+import * as React from "react"
 import {
   IconDots,
   IconFolder,
@@ -35,6 +36,13 @@ export function NavDocuments({
   }[]
 }) {
   const { isMobile } = useSidebar()
+  const [isClient, setIsClient] = React.useState(false)
+
+  React.useEffect(() => {
+    setIsClient(true)
+  }, [])
+
+  if (!isClient) return null
 
   return (
     <SidebarGroup className="group-data-[collapsible=icon]:hidden">

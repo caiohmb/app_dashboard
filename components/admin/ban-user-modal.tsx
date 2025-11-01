@@ -32,8 +32,10 @@ interface BanUserModalProps {
 export function BanUserModal({ user, open, onOpenChange }: BanUserModalProps) {
   const router = useRouter()
   const [loading, setLoading] = React.useState(false)
-  const [reason, setReason] = React.useState("")
-  const [expiresInDays, setExpiresInDays] = React.useState<string>("")
+  const [formData, setFormData] = React.useState({
+    reason: "",
+    expiresInDays: "",
+  })
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -44,15 +46,16 @@ export function BanUserModal({ user, open, onOpenChange }: BanUserModalProps) {
     try {
       const result = await banUserAction({
         userId: user.id,
-        reason,
-        expiresInDays: expiresInDays ? parseInt(expiresInDays) : undefined
+        reason: formData.reason,
+        expiresInDays: formData.expiresInDays
+          ? parseInt(formData.expiresInDays)
+          : undefined,
       })
 
       if (result.success) {
         toast.success("Usuário banido com sucesso!")
         onOpenChange(false)
-        setReason("")
-        setExpiresInDays("")
+        setFormData({ reason: "", expiresInDays: "" })
         router.refresh()
       } else {
         toast.error(result.error || "Erro ao banir usuário")
@@ -81,8 +84,10 @@ export function BanUserModal({ user, open, onOpenChange }: BanUserModalProps) {
               <Label htmlFor="reason">Motivo do Ban</Label>
               <Textarea
                 id="reason"
-                value={reason}
-                onChange={(e) => setReason(e.target.value)}
+                value={formData.reason}
+                onChange={(e) =>
+                  setFormData({ ...formData, reason: e.target.value })
+                }
                 placeholder="Violação dos termos de uso..."
                 required
                 rows={4}
@@ -93,8 +98,10 @@ export function BanUserModal({ user, open, onOpenChange }: BanUserModalProps) {
               <Input
                 id="expires"
                 type="number"
-                value={expiresInDays}
-                onChange={(e) => setExpiresInDays(e.target.value)}
+                value={formData.expiresInDays}
+                onChange={(e) =>
+                  setFormData({ ...formData, expiresInDays: e.target.value })
+                }
                 placeholder="Deixe vazio para ban permanente"
                 min="1"
               />

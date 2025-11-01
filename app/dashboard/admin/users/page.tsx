@@ -8,6 +8,7 @@ interface SearchParams {
   page?: string
   search?: string
   role?: string
+  organizationId?: string
 }
 
 export default async function AdminUsersPage(props: {
@@ -36,6 +37,7 @@ export default async function AdminUsersPage(props: {
   // Filtros
   const search = searchParams.search || ""
   const roleFilter = searchParams.role || ""
+  const organizationFilter = searchParams.organizationId || ""
 
   // Construir where clause
   const where = {
@@ -48,6 +50,7 @@ export default async function AdminUsersPage(props: {
       } : {},
       roleFilter ? { role: { contains: roleFilter } } : {},
       // Se não for superadmin, filtrar apenas usuários da mesma organização
+      organizationFilter ? { organizationId: organizationFilter } : {},
       !isSuperAdmin && currentUser?.organizationId
         ? { organizationId: currentUser.organizationId }
         : {},
@@ -119,6 +122,7 @@ export default async function AdminUsersPage(props: {
         totalUsers={totalUsers}
         searchQuery={search}
         roleFilter={roleFilter}
+        organizationFilter={organizationFilter}
         isSuperAdmin={isSuperAdmin}
         organizations={organizations}
       />

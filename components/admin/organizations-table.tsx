@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { useRouter } from "next/navigation"
+import Link from "next/link"
 import {
   IconBuilding,
   IconEdit,
@@ -47,7 +47,6 @@ interface OrganizationsTableProps {
 }
 
 export function OrganizationsTable({ organizations }: OrganizationsTableProps) {
-  const router = useRouter()
   const [createModalOpen, setCreateModalOpen] = React.useState(false)
   const [editModalOpen, setEditModalOpen] = React.useState(false)
   const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false)
@@ -118,10 +117,12 @@ export function OrganizationsTable({ organizations }: OrganizationsTableProps) {
                         </span>
                       </TableCell>
                       <TableCell>
-                        <Badge variant="secondary" className="gap-1">
-                          <IconUsers className="h-3 w-3" />
-                          {org._count.users}
-                        </Badge>
+                        <Link href={`/dashboard/admin/users?organizationId=${org.id}`}>
+                          <Badge variant="secondary" className="gap-1 cursor-pointer hover:bg-secondary/80">
+                            <IconUsers className="h-3 w-3" />
+                            {org._count.users}
+                          </Badge>
+                        </Link>
                       </TableCell>
                       <TableCell>
                         {new Date(org.createdAt).toLocaleDateString("pt-BR")}

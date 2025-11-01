@@ -101,9 +101,9 @@ export function EditOrganizationModal({
 
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
-              <Label htmlFor="edit-name">Nome *</Label>
+              <Label htmlFor="name">Nome *</Label>
               <Input
-                id="edit-name"
+                id="name"
                 value={formData.name}
                 onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
                 placeholder="Acme Corporation"
@@ -112,9 +112,9 @@ export function EditOrganizationModal({
             </div>
 
             <div className="grid gap-2">
-              <Label htmlFor="edit-slug">Slug *</Label>
+              <Label htmlFor="slug">Slug *</Label>
               <Input
-                id="edit-slug"
+                id="slug"
                 value={formData.slug}
                 onChange={(e) => setFormData(prev => ({ ...prev, slug: e.target.value }))}
                 placeholder="acme-corporation"
@@ -126,9 +126,9 @@ export function EditOrganizationModal({
             </div>
 
             <div className="grid gap-2">
-              <Label htmlFor="edit-description">Descrição</Label>
+              <Label htmlFor="description">Descrição</Label>
               <Textarea
-                id="edit-description"
+                id="description"
                 value={formData.description}
                 onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
                 placeholder="Descrição da organização..."
@@ -137,9 +137,9 @@ export function EditOrganizationModal({
             </div>
 
             <div className="grid gap-2">
-              <Label htmlFor="edit-logo">Logo (URL)</Label>
+              <Label htmlFor="logo">Logo (URL)</Label>
               <Input
-                id="edit-logo"
+                id="logo"
                 type="url"
                 value={formData.logo}
                 onChange={(e) => setFormData(prev => ({ ...prev, logo: e.target.value }))}

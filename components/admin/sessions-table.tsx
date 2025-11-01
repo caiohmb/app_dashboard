@@ -29,16 +29,8 @@ import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { toast } from "sonner"
 import { revokeSessionAction } from "@/app/actions/admin"
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog"
+import { getBrowserInfo, getInitials } from "@/lib/utils"
+import { RevokeSessionDialog } from "@/components/admin/revoke-session-dialog"
 
 interface Session {
   id: string
@@ -72,7 +64,6 @@ export function SessionsTable({
   userIdFilter,
 }: SessionsTableProps) {
   const router = useRouter()
-  const [revoking, setRevoking] = React.useState<string | null>(null)
   const [sessionToRevoke, setSessionToRevoke] = React.useState<Session | null>(null)
   const [dialogOpen, setDialogOpen] = React.useState(false)
 
@@ -83,61 +74,9 @@ export function SessionsTable({
     router.push(`/dashboard/admin/sessions?${params.toString()}`)
   }
 
-  const getInitials = (name: string) => {
-    return name
-      .split(" ")
-      .map((n) => n[0])
-      .join("")
-      .toUpperCase()
-      .slice(0, 2)
-  }
-
-  const getDeviceIcon = (userAgent: string | null) => {
-    if (!userAgent) return <IconWorld className="h-4 w-4" />
-
-    const ua = userAgent.toLowerCase()
-    if (ua.includes("mobile") || ua.includes("android") || ua.includes("iphone")) {
-      return <IconDeviceMobile className="h-4 w-4" />
-    }
-    return <IconDeviceDesktop className="h-4 w-4" />
-  }
-
-  const getBrowserInfo = (userAgent: string | null) => {
-    if (!userAgent) return "Desconhecido"
-
-    if (userAgent.includes("Chrome")) return "Chrome"
-    if (userAgent.includes("Firefox")) return "Firefox"
-    if (userAgent.includes("Safari")) return "Safari"
-    if (userAgent.includes("Edge")) return "Edge"
-
-    return "Outro"
-  }
-
   const handleRevokeClick = (session: Session) => {
     setSessionToRevoke(session)
     setDialogOpen(true)
-  }
-
-  const handleRevokeConfirm = async () => {
-    if (!sessionToRevoke) return
-
-    setRevoking(sessionToRevoke.id)
-    setDialogOpen(false)
-
-    try {
-      const result = await revokeSessionAction(sessionToRevoke.token)
-      if (result.success) {
-        toast.success("Sessão revogada com sucesso!")
-        router.refresh()
-      } else {
-        toast.error(result.error || "Erro ao revogar sessão")
-      }
-    } catch (error) {
-      toast.error("Erro ao revogar sessão")
-    } finally {
-      setRevoking(null)
-      setSessionToRevoke(null)
-    }
   }
 
   return (
@@ -196,7 +135,11 @@ export function SessionsTable({
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-2">
-                            {getDeviceIcon(session.userAgent)}
+                            {session.userAgent?.toLowerCase().includes("mobile") ? (
+                              <IconDeviceMobile className="h-4 w-4" />
+                            ) : (
+                              <IconDeviceDesktop className="h-4 w-4" />
+                            )}
                             <span className="text-sm">{getBrowserInfo(session.userAgent)}</span>
                           </div>
                         </TableCell>
@@ -229,16 +172,10 @@ export function SessionsTable({
                             variant="ghost"
                             size="sm"
                             onClick={() => handleRevokeClick(session)}
-                            disabled={revoking === session.id || isExpired}
+                            disabled={isExpired}
                           >
-                            {revoking === session.id ? (
-                              <IconLoader2 className="h-4 w-4 animate-spin" />
-                            ) : (
-                              <>
-                                <IconTrash className="mr-2 h-4 w-4" />
-                                Revogar
-                              </>
-                            )}
+                            <IconTrash className="mr-2 h-4 w-4" />
+                            Revogar
                           </Button>
                         </TableCell>
                       </TableRow>
@@ -278,24 +215,11 @@ export function SessionsTable({
         </CardContent>
       </Card>
 
-      {/* Dialog de Confirmação */}
-      <AlertDialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Revogar Sessão</AlertDialogTitle>
-            <AlertDialogDescription>
-              Tem certeza que deseja revogar esta sessão? O usuário{" "}
-              <strong>{sessionToRevoke?.user.name}</strong> será desconectado imediatamente.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={handleRevokeConfirm} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-              Revogar
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <RevokeSessionDialog
+        session={sessionToRevoke}
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+      />
     </>
   )
 }

@@ -5,9 +5,39 @@ import { auth } from "@/lib/auth"
 import { authClient } from "@/lib/auth-client"
 import { prisma } from "@/lib/prisma"
 import { revalidatePath } from "next/cache"
+import { z } from "zod"
 
-// Verifica se o usuário é admin (admin ou superadmin)
-async function checkIsAdmin() {
+// Esquemas de validação
+const CreateUserSchema = z.object({
+  name: z.string().min(1, "O nome é obrigatório"),
+  email: z.string().email("Email inválido"),
+  password: z.string().min(6, "A senha deve ter no mínimo 6 caracteres"),
+  role: z.string().optional(),
+  organizationId: z.string().optional(),
+})
+
+const UpdateUserSchema = z.object({
+  userId: z.string(),
+  name: z.string().min(1, "O nome é obrigatório").optional(),
+  email: z.string().email("Email inválido").optional(),
+  role: z.string().optional(),
+  organizationId: z.string().nullable().optional(),
+})
+
+const BanUserSchema = z.object({
+  userId: z.string(),
+  reason: z.string().min(1, "O motivo é obrigatório"),
+  expiresInDays: z.number().optional(),
+})
+
+const SetRoleSchema = z.object({
+  userId: z.string(),
+  role: z.string(),
+})
+
+
+// Verifica se o usuário possui uma das roles necessárias
+async function checkUserRole(requiredRoles: string[]) {
   const headersList = await headers()
   const session = await auth.api.getSession({
     headers: headersList
@@ -18,69 +48,83 @@ async function checkIsAdmin() {
   }
 
   const userRoles = session.user.role?.split(",") || []
-  const isAdmin = userRoles.some(role => role === "admin" || role === "superadmin")
+  const hasRequiredRole = userRoles.some(role => requiredRoles.includes(role))
 
-  if (!isAdmin) {
-    throw new Error("Sem permissão de admin")
+  if (!hasRequiredRole) {
+    throw new Error(`Sem permissão. Requer uma das seguintes roles: ${requiredRoles.join(", ")}`)
   }
 
   return session
 }
 
-// Verifica se o usuário é superadmin
-async function checkIsSuperAdmin() {
-  const headersList = await headers()
-  const session = await auth.api.getSession({
-    headers: headersList
-  })
-
-  if (!session?.user) {
-    throw new Error("Não autenticado")
-  }
-
-  const userRoles = session.user.role?.split(",") || []
-  const isSuperAdmin = userRoles.some(role => role === "superadmin")
-
-  if (!isSuperAdmin) {
-    throw new Error("Sem permissão de superadmin")
-  }
-
-  return session
-}
-
-// Pega informações do admin com organização
-async function getAdminInfo() {
-  const session = await checkIsAdmin()
-
-  const user = await prisma.user.findUnique({
+// Pega informações do admin e do usuário alvo, e verifica permissões
+async function getAdminAndTargetUser(userId: string) {
+  const session = await checkUserRole(["admin", "superadmin"])
+  const adminUser = await prisma.user.findUnique({
     where: { id: session.user.id },
-    include: { organization: true }
   })
 
-  if (!user) {
-    throw new Error("Usuário não encontrado")
+  if (!adminUser) {
+    throw new Error("Usuário admin não encontrado")
   }
 
-  const userRoles = user.role?.split(",") || []
-  const isSuperAdmin = userRoles.some(role => role === "superadmin")
+  const targetUser = await prisma.user.findUnique({
+    where: { id: userId },
+  })
 
-  return {
-    user,
-    isSuperAdmin,
-    organizationId: user.organizationId
+  if (!targetUser) {
+    throw new Error("Usuário alvo não encontrado")
   }
+
+  const isAdminSuper = adminUser.role?.includes("superadmin")
+  const isTargetSuper = targetUser.role?.includes("superadmin")
+
+  // Superadmin pode gerenciar todos, exceto outro superadmin (a menos que seja ele mesmo)
+  if (isAdminSuper) {
+    if (isTargetSuper && adminUser.id !== targetUser.id) {
+      throw new Error("Superadmin não pode modificar outro superadmin")
+    }
+    return { adminUser, targetUser, isAdminSuper }
+  }
+
+  // Admin normal não pode modificar superadmin
+  if (isTargetSuper) {
+    throw new Error("Admin não pode modificar superadmin")
+  }
+
+  // Admin normal só pode gerenciar usuários da sua organização
+  if (adminUser.organizationId !== targetUser.organizationId) {
+    throw new Error("Você não tem permissão para gerenciar usuários de outra organização")
+  }
+
+  return { adminUser, targetUser, isAdminSuper }
 }
+
 
 // Criar novo usuário
-export async function createUserAction(data: {
-  name: string
-  email: string
-  password: string
-  role?: string
-  organizationId?: string
-}) {
+export async function createUserAction(data: z.infer<typeof CreateUserSchema>) {
   try {
-    await checkIsAdmin()
+    const validation = CreateUserSchema.safeParse(data)
+    if (!validation.success) {
+      return { success: false, error: "Dados inválidos" }
+    }
+
+    const session = await checkUserRole(["admin", "superadmin"])
+    const adminUser = await prisma.user.findUnique({ where: { id: session.user.id } })
+    if (!adminUser) {
+      return { success: false, error: "Usuário admin não encontrado" }
+    }
+
+    const isAdminSuper = adminUser.role?.includes("superadmin")
+
+    // Se o admin não for superadmin, ele só pode criar usuários para a sua própria organização
+    let organizationId = data.organizationId
+    if (!isAdminSuper) {
+      organizationId = adminUser.organizationId ?? undefined
+      if (data.role?.includes("superadmin") || data.role?.includes("admin")) {
+        return { success: false, error: "Você não pode criar usuários com role de admin ou superadmin" }
+      }
+    }
 
     // Usar Better Auth API para criar usuário
     const result = await auth.api.signUpEmail({
@@ -96,12 +140,12 @@ export async function createUserAction(data: {
     }
 
     // Atualizar role e organizationId se fornecidos
-    if ((data.role || data.organizationId) && result.user) {
+    if ((data.role || organizationId) && result.user) {
       await prisma.user.update({
         where: { id: result.user.id },
         data: {
           ...(data.role && { role: data.role }),
-          ...(data.organizationId && { organizationId: data.organizationId }),
+          ...(organizationId && { organizationId: organizationId }),
         }
       })
     }
@@ -115,15 +159,24 @@ export async function createUserAction(data: {
 }
 
 // Atualizar usuário
-export async function updateUserAction(data: {
-  userId: string
-  name?: string
-  email?: string
-  role?: string
-  organizationId?: string | null
-}) {
+export async function updateUserAction(data: z.infer<typeof UpdateUserSchema>) {
   try {
-    await checkIsAdmin()
+    const validation = UpdateUserSchema.safeParse(data)
+    if (!validation.success) {
+      return { success: false, error: "Dados inválidos" }
+    }
+
+    const { adminUser, isAdminSuper } = await getAdminAndTargetUser(data.userId)
+
+    // Prevenir escalação de privilégio
+    if (data.role?.includes("superadmin") && !isAdminSuper) {
+      return { success: false, error: "Somente superadmins podem atribuir a role de superadmin" }
+    }
+    
+    // Admins não podem alterar a organização de um usuário para uma organização que não seja a sua
+    if (!isAdminSuper && data.organizationId && data.organizationId !== adminUser.organizationId) {
+      return { success: false, error: "Você só pode atribuir usuários à sua própria organização" }
+    }
 
     const updatedUser = await prisma.user.update({
       where: { id: data.userId },
@@ -144,13 +197,14 @@ export async function updateUserAction(data: {
 }
 
 // Banir usuário
-export async function banUserAction(data: {
-  userId: string
-  reason: string
-  expiresInDays?: number
-}) {
+export async function banUserAction(data: z.infer<typeof BanUserSchema>) {
   try {
-    await checkIsAdmin()
+    const validation = BanUserSchema.safeParse(data)
+    if (!validation.success) {
+      return { success: false, error: "Dados inválidos" }
+    }
+
+    await getAdminAndTargetUser(data.userId)
 
     const banExpires = data.expiresInDays
       ? new Date(Date.now() + data.expiresInDays * 24 * 60 * 60 * 1000)
@@ -176,7 +230,7 @@ export async function banUserAction(data: {
 // Desbanir usuário
 export async function unbanUserAction(userId: string) {
   try {
-    await checkIsAdmin()
+    await getAdminAndTargetUser(userId)
 
     const updatedUser = await prisma.user.update({
       where: { id: userId },
@@ -198,10 +252,10 @@ export async function unbanUserAction(userId: string) {
 // Deletar usuário
 export async function deleteUserAction(userId: string) {
   try {
-    const session = await checkIsAdmin()
+    const { adminUser } = await getAdminAndTargetUser(userId)
 
     // Não permitir deletar a si mesmo
-    if (session.user.id === userId) {
+    if (adminUser.id === userId) {
       return { success: false, error: "Você não pode deletar sua própria conta" }
     }
 
@@ -218,12 +272,19 @@ export async function deleteUserAction(userId: string) {
 }
 
 // Alterar role do usuário
-export async function setRoleAction(data: {
-  userId: string
-  role: string
-}) {
+export async function setRoleAction(data: z.infer<typeof SetRoleSchema>) {
   try {
-    await checkIsAdmin()
+    const validation = SetRoleSchema.safeParse(data)
+    if (!validation.success) {
+      return { success: false, error: "Dados inválidos" }
+    }
+
+    const { isAdminSuper } = await getAdminAndTargetUser(data.userId)
+
+    // Prevenir escalação de privilégio
+    if (data.role.includes("superadmin") && !isAdminSuper) {
+      return { success: false, error: "Somente superadmins podem atribuir a role de superadmin" }
+    }
 
     const updatedUser = await prisma.user.update({
       where: { id: data.userId },
@@ -238,10 +299,26 @@ export async function setRoleAction(data: {
   }
 }
 
+const CreateOrganizationSchema = z.object({
+  name: z.string().min(1, "O nome é obrigatório"),
+  slug: z.string().min(1, "O slug é obrigatório"),
+  description: z.string().optional(),
+  logo: z.string().optional(),
+})
+
+const UpdateOrganizationSchema = z.object({
+  organizationId: z.string(),
+  name: z.string().min(1, "O nome é obrigatório").optional(),
+  slug: z.string().min(1, "O slug é obrigatório").optional(),
+  description: z.string().optional(),
+  logo: z.string().optional(),
+})
+
+
 // Revogar sessão
 export async function revokeSessionAction(sessionToken: string) {
   try {
-    await checkIsAdmin()
+    await checkUserRole(["admin", "superadmin"])
 
     await prisma.session.delete({
       where: { token: sessionToken }
@@ -258,7 +335,7 @@ export async function revokeSessionAction(sessionToken: string) {
 // Revogar todas as sessões de um usuário
 export async function revokeAllUserSessionsAction(userId: string) {
   try {
-    await checkIsAdmin()
+    await checkUserRole(["admin", "superadmin"])
 
     await prisma.session.deleteMany({
       where: { userId }
@@ -275,14 +352,14 @@ export async function revokeAllUserSessionsAction(userId: string) {
 // ========== ORGANIZAÇÕES (SUPERADMIN ONLY) ==========
 
 // Criar nova organização
-export async function createOrganizationAction(data: {
-  name: string
-  slug: string
-  description?: string
-  logo?: string
-}) {
+export async function createOrganizationAction(data: z.infer<typeof CreateOrganizationSchema>) {
   try {
-    await checkIsSuperAdmin()
+    const validation = CreateOrganizationSchema.safeParse(data)
+    if (!validation.success) {
+      return { success: false, error: "Dados inválidos" }
+    }
+
+    await checkUserRole(["superadmin"])
 
     const organization = await prisma.organization.create({
       data: {
@@ -302,15 +379,14 @@ export async function createOrganizationAction(data: {
 }
 
 // Atualizar organização
-export async function updateOrganizationAction(data: {
-  organizationId: string
-  name?: string
-  slug?: string
-  description?: string
-  logo?: string
-}) {
+export async function updateOrganizationAction(data: z.infer<typeof UpdateOrganizationSchema>) {
   try {
-    await checkIsSuperAdmin()
+    const validation = UpdateOrganizationSchema.safeParse(data)
+    if (!validation.success) {
+      return { success: false, error: "Dados inválidos" }
+    }
+
+    await checkUserRole(["superadmin"])
 
     const organization = await prisma.organization.update({
       where: { id: data.organizationId },
@@ -333,7 +409,7 @@ export async function updateOrganizationAction(data: {
 // Deletar organização
 export async function deleteOrganizationAction(organizationId: string) {
   try {
-    await checkIsSuperAdmin()
+    await checkUserRole(["superadmin"])
 
     // Verificar se há usuários na organização
     const usersCount = await prisma.user.count({
@@ -362,7 +438,7 @@ export async function deleteOrganizationAction(organizationId: string) {
 // Listar todas as organizações (para superadmin)
 export async function listOrganizationsAction() {
   try {
-    await checkIsSuperAdmin()
+    await checkUserRole(["superadmin"])
 
     const organizations = await prisma.organization.findMany({
       include: {

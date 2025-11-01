@@ -68,7 +68,7 @@ export function EditUserModal({
         name: user.name,
         email: user.email,
         role: user.role || "user",
-        organizationId: user.organizationId || ""
+        organizationId: user.organizationId || "",
       })
     }
   }, [user])
@@ -114,30 +114,30 @@ export function EditUserModal({
         <form onSubmit={handleSubmit}>
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
-              <Label htmlFor="edit-name">Nome</Label>
+              <Label htmlFor="name">Nome</Label>
               <Input
-                id="edit-name"
+                id="name"
                 value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
                 required
               />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="edit-email">Email</Label>
+              <Label htmlFor="email">Email</Label>
               <Input
-                id="edit-email"
+                id="email"
                 type="email"
                 value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
                 required
               />
             </div>
             {isSuperAdmin && organizations.length > 0 && (
               <div className="grid gap-2">
-                <Label htmlFor="edit-organization">Organização</Label>
+                <Label htmlFor="organization">Organização</Label>
                 <Select
-                  value={formData.organizationId}
-                  onValueChange={(value) => setFormData({ ...formData, organizationId: value })}
+                  value={formData.organizationId || "none"}
+                  onValueChange={(value) => setFormData(prev => ({ ...prev, organizationId: value }))}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Selecione uma organização (opcional)" />
@@ -154,10 +154,10 @@ export function EditUserModal({
               </div>
             )}
             <div className="grid gap-2">
-              <Label htmlFor="edit-role">Role</Label>
+              <Label htmlFor="role">Role</Label>
               <Select
                 value={formData.role}
-                onValueChange={(value) => setFormData({ ...formData, role: value })}
+                onValueChange={(value) => setFormData(prev => ({ ...prev, role: value }))}
               >
                 <SelectTrigger>
                   <SelectValue />

@@ -64,17 +64,17 @@ export function CreateOrganizationModal({
   }
 
   // Auto-gerar slug a partir do nome
-  const handleNameChange = (name: string) => {
-    setFormData(prev => ({
-      ...prev,
-      name,
-      slug: name
-        .toLowerCase()
-        .normalize("NFD")
-        .replace(/[\u0300-\u036f]/g, "") // Remove acentos
-        .replace(/[^a-z0-9]+/g, "-") // Substitui caracteres especiais por -
-        .replace(/^-+|-+$/g, "") // Remove - do início e fim
-    }))
+  const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const name = e.target.value
+    const slug = name
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "") // Remove acentos
+      .replace(/[^a-z0-9\s-]/g, "") // Remove caracteres especiais, exceto espaços e hifens
+      .trim()
+      .replace(/\s+/g, "-") // Substitui espaços por -
+      .replace(/-+/g, "-") // Remove hifens duplicados
+    setFormData({ ...formData, name, slug })
   }
 
   return (
@@ -94,7 +94,7 @@ export function CreateOrganizationModal({
               <Input
                 id="name"
                 value={formData.name}
-                onChange={(e) => handleNameChange(e.target.value)}
+                onChange={handleNameChange}
                 placeholder="Acme Corporation"
                 required
               />
@@ -105,7 +105,7 @@ export function CreateOrganizationModal({
               <Input
                 id="slug"
                 value={formData.slug}
-                onChange={(e) => setFormData(prev => ({ ...prev, slug: e.target.value }))}
+                onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
                 placeholder="acme-corporation"
                 required
               />
