@@ -27,14 +27,10 @@ export default async function AdminDashboardPage() {
       where: { emailVerified: true }
     }),
 
-    // Usuários banidos (se a tabela existir)
+    // Usuários banidos
     prisma.user.count({
-      where: {
-        ban: {
-          isNot: null
-        }
-      }
-    }).catch(() => 0), // Fallback se não existir campo ban
+      where: { banned: true }
+    }),
 
     // Usuários recentes (últimos 7 dias)
     prisma.user.count({

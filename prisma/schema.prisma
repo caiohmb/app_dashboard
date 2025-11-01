@@ -78,8 +78,8 @@ model Activity {
 
   createdAt DateTime @default(now())
 
-  @@map("activity")
   @@index([userId, createdAt])
+  @@map("activity")
 }
 
 model Session {

@@ -1,8 +1,10 @@
 "use client"
 
-import { useSession } from "@/lib/auth-client"
 import { authClient } from "@/lib/auth-client"
 import type { Permission } from "@/lib/permissions"
+
+// Hook useSession do Better Auth
+const { useSession } = authClient
 
 /**
  * Hook para verificar se o usuário é admin
@@ -25,7 +27,7 @@ export function useIsAdmin(): boolean {
  * @param permission - Objeto de permissão a verificar
  * @returns true se o usuário tem a permissão
  */
-export function useHasPermission(permission: Partial<Permission>): boolean {
+export function useHasPermission(permission: any): boolean {
   const { data: session } = useSession()
 
   if (!session?.user) {
@@ -38,7 +40,7 @@ export function useHasPermission(permission: Partial<Permission>): boolean {
   return userRoles.some(role => {
     try {
       return authClient.admin.checkRolePermission({
-        permissions: permission,
+        permissions: permission as any,
         role: role as "admin" | "user" | "superadmin",
       })
     } catch {

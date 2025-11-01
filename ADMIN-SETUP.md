@@ -26,11 +26,10 @@
 
 ### ✅ Concluído - Interface Admin Básica (Rodada 2)
 
-5. **Middleware de Proteção**
-   - Arquivo: [middleware.ts](middleware.ts)
-   - Protege rotas `/dashboard/admin/*`
-   - Redireciona não-autorizados para login
-   - Redireciona não-admins para dashboard
+5. **Proteção de Rotas**
+   - ~~Middleware removido (incompatível com Edge Runtime + Prisma)~~
+   - Proteção server-side robusta no layout
+   - Dupla verificação de segurança
 
 6. **Layout Admin**
    - Arquivo: [app/dashboard/admin/layout.tsx](app/dashboard/admin/layout.tsx)
