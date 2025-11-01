@@ -15,21 +15,6 @@ const resend = new Resend(process.env.RESEND_API_KEY)
 
 export async function sendEmail(options: SendEmailOptions) {
   try {
-    // Em desenvolvimento, Resend só permite enviar para o email verificado
-    // Substituímos o destinatário mas mostramos o email original no console
-    const isDevelopment = process.env.NODE_ENV === "development"
-    const verifiedEmail = "caioh.maiab@gmail.com" // Email verificado no Resend
-
-    const emailToSend = isDevelopment ? verifiedEmail : options.to
-
-    if (isDevelopment && options.to !== verifiedEmail) {
-      console.log("\n=== MODO DESENVOLVIMENTO - RESEND ===")
-      console.log("Email destinatário original:", options.to)
-      console.log("Enviando para email verificado:", verifiedEmail)
-      console.log("(Em produção, seria enviado para:", options.to, ")")
-      console.log("=====================================\n")
-    }
-
     // Determina o endereço "from" baseado no ambiente
     // Em produção, usa o domínio verificado via variável de ambiente
     // Em desenvolvimento, usa o email de teste do Resend
@@ -38,8 +23,8 @@ export async function sendEmail(options: SendEmailOptions) {
     // Envia email via Resend
     const { data, error } = await resend.emails.send({
       from: fromEmail,
-      to: emailToSend,
-      subject: isDevelopment ? `[DEV: ${options.to}] ${options.subject}` : options.subject,
+      to: options.to,
+      subject: options.subject,
       html: options.html || options.text,
     })
 
@@ -48,9 +33,7 @@ export async function sendEmail(options: SendEmailOptions) {
       throw new Error(error.message)
     }
 
-    if (isDevelopment) {
-      console.log("✅ Email enviado com sucesso! ID:", data?.id)
-    }
+    console.log("✅ Email enviado com sucesso para:", options.to, "| ID:", data?.id)
 
     return { success: true, data }
   } catch (error) {

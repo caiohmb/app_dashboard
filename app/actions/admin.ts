@@ -187,3 +187,37 @@ export async function setRoleAction(data: {
     return { success: false, error: error.message || "Erro ao alterar role" }
   }
 }
+
+// Revogar sessão
+export async function revokeSessionAction(sessionToken: string) {
+  try {
+    await checkIsAdmin()
+
+    await prisma.session.delete({
+      where: { token: sessionToken }
+    })
+
+    revalidatePath("/dashboard/admin/sessions")
+    return { success: true }
+  } catch (error: any) {
+    console.error("Erro ao revogar sessão:", error)
+    return { success: false, error: error.message || "Erro ao revogar sessão" }
+  }
+}
+
+// Revogar todas as sessões de um usuário
+export async function revokeAllUserSessionsAction(userId: string) {
+  try {
+    await checkIsAdmin()
+
+    await prisma.session.deleteMany({
+      where: { userId }
+    })
+
+    revalidatePath("/dashboard/admin/sessions")
+    return { success: true }
+  } catch (error: any) {
+    console.error("Erro ao revogar sessões:", error)
+    return { success: false, error: error.message || "Erro ao revogar sessões" }
+  }
+}
