@@ -24,19 +24,33 @@ import {
 import { toast } from "sonner"
 import { createUserAction } from "@/app/actions/admin"
 
+interface Organization {
+  id: string
+  name: string
+  slug: string
+}
+
 interface CreateUserModalProps {
   open: boolean
   onOpenChange: (open: boolean) => void
+  isSuperAdmin: boolean
+  organizations: Organization[]
 }
 
-export function CreateUserModal({ open, onOpenChange }: CreateUserModalProps) {
+export function CreateUserModal({
+  open,
+  onOpenChange,
+  isSuperAdmin,
+  organizations,
+}: CreateUserModalProps) {
   const router = useRouter()
   const [loading, setLoading] = React.useState(false)
   const [formData, setFormData] = React.useState({
     name: "",
     email: "",
     password: "",
-    role: "user"
+    role: "user",
+    organizationId: ""
   })
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -44,12 +58,15 @@ export function CreateUserModal({ open, onOpenChange }: CreateUserModalProps) {
     setLoading(true)
 
     try {
-      const result = await createUserAction(formData)
+      const result = await createUserAction({
+        ...formData,
+        organizationId: formData.organizationId === "none" ? undefined : formData.organizationId || undefined
+      })
 
       if (result.success) {
         toast.success("Usuário criado com sucesso!")
         onOpenChange(false)
-        setFormData({ name: "", email: "", password: "", role: "user" })
+        setFormData({ name: "", email: "", password: "", role: "user", organizationId: "" })
         router.refresh()
       } else {
         toast.error(result.error || "Erro ao criar usuário")
@@ -105,6 +122,27 @@ export function CreateUserModal({ open, onOpenChange }: CreateUserModalProps) {
                 minLength={8}
               />
             </div>
+            {isSuperAdmin && organizations.length > 0 && (
+              <div className="grid gap-2">
+                <Label htmlFor="organization">Organização</Label>
+                <Select
+                  value={formData.organizationId}
+                  onValueChange={(value) => setFormData({ ...formData, organizationId: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione uma organização (opcional)" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Sem organização</SelectItem>
+                    {organizations.map((org) => (
+                      <SelectItem key={org.id} value={org.id}>
+                        {org.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
             <div className="grid gap-2">
               <Label htmlFor="role">Role</Label>
               <Select

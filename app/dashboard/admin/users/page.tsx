@@ -10,15 +10,23 @@ interface SearchParams {
   role?: string
 }
 
-export default async function AdminUsersPage({
-  searchParams,
-}: {
-  searchParams: SearchParams
+export default async function AdminUsersPage(props: {
+  searchParams: Promise<SearchParams>
 }) {
+  const searchParams = await props.searchParams
   const headersList = await headers()
   const session = await auth.api.getSession({
     headers: headersList
   })
+
+  // Verificar role do admin
+  const currentUser = await prisma.user.findUnique({
+    where: { id: session?.user?.id },
+    include: { organization: true }
+  })
+
+  const userRoles = currentUser?.role?.split(",") || []
+  const isSuperAdmin = userRoles.some(role => role === "superadmin")
 
   // Paginação
   const page = parseInt(searchParams.page || "1")
@@ -39,6 +47,10 @@ export default async function AdminUsersPage({
         ]
       } : {},
       roleFilter ? { role: { contains: roleFilter } } : {},
+      // Se não for superadmin, filtrar apenas usuários da mesma organização
+      !isSuperAdmin && currentUser?.organizationId
+        ? { organizationId: currentUser.organizationId }
+        : {},
     ]
   }
 
@@ -60,12 +72,32 @@ export default async function AdminUsersPage({
         banReason: true,
         banExpires: true,
         createdAt: true,
+        organizationId: true,
+        organization: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+          }
+        }
       }
     }),
     prisma.user.count({ where })
   ])
 
   const totalPages = Math.ceil(totalUsers / pageSize)
+
+  // Buscar todas as organizações (apenas para superadmin)
+  const organizations = isSuperAdmin
+    ? await prisma.organization.findMany({
+        orderBy: { name: 'asc' },
+        select: {
+          id: true,
+          name: true,
+          slug: true,
+        }
+      })
+    : []
 
   return (
     <div className="flex flex-col gap-4 py-4 px-4 md:gap-6 md:py-6 lg:px-6">
@@ -87,6 +119,8 @@ export default async function AdminUsersPage({
         totalUsers={totalUsers}
         searchQuery={search}
         roleFilter={roleFilter}
+        isSuperAdmin={isSuperAdmin}
+        organizations={organizations}
       />
     </div>
   )

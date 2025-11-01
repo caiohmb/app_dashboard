@@ -9,13 +9,22 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
-import { IconUsers, IconUserCheck, IconUserX, IconActivity } from "@tabler/icons-react"
+import { IconUsers, IconUserCheck, IconUserX, IconActivity, IconBuilding } from "@tabler/icons-react"
 
 export default async function AdminDashboardPage() {
   const headersList = await headers()
   const session = await auth.api.getSession({
     headers: headersList
   })
+
+  // Verificar se é superadmin
+  const currentUser = await prisma.user.findUnique({
+    where: { id: session?.user?.id },
+    include: { organization: true }
+  })
+
+  const userRoles = currentUser?.role?.split(",") || []
+  const isSuperAdmin = userRoles.some(role => role === "superadmin")
 
   // Buscar métricas do sistema
   const [totalUsers, verifiedUsers, bannedUsersCount, recentUsers] = await Promise.all([
@@ -180,7 +189,7 @@ export default async function AdminDashboardPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid gap-4 md:grid-cols-2">
+          <div className={`grid gap-4 ${isSuperAdmin ? 'md:grid-cols-3' : 'md:grid-cols-2'}`}>
             <a
               href="/dashboard/admin/users"
               className="flex items-center gap-3 rounded-lg border p-4 transition-colors hover:bg-muted"
@@ -206,6 +215,21 @@ export default async function AdminDashboardPage() {
                 </p>
               </div>
             </a>
+
+            {isSuperAdmin && (
+              <a
+                href="/dashboard/admin/organizations"
+                className="flex items-center gap-3 rounded-lg border p-4 transition-colors hover:bg-muted"
+              >
+                <IconBuilding className="h-5 w-5" />
+                <div>
+                  <p className="font-medium">Organizações</p>
+                  <p className="text-sm text-muted-foreground">
+                    Gerenciar organizações do sistema
+                  </p>
+                </div>
+              </a>
+            )}
           </div>
         </CardContent>
       </Card>

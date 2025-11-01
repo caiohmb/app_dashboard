@@ -20,6 +20,11 @@ import {
 
 export function SidebarThemeToggle() {
   const { setTheme, theme } = useTheme()
+  const [mounted, setMounted] = React.useState(false)
+
+  React.useEffect(() => {
+    setMounted(true)
+  }, [])
 
   return (
     <SidebarGroup>
@@ -31,7 +36,9 @@ export function SidebarThemeToggle() {
                 <SidebarMenuButton>
                   <IconSun className="h-4 w-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
                   <IconMoon className="absolute h-4 w-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
-                  <span>Tema: {theme === "light" ? "Claro" : theme === "dark" ? "Escuro" : "Sistema"}</span>
+                  <span>
+                    Tema: {!mounted ? "..." : theme === "light" ? "Claro" : theme === "dark" ? "Escuro" : "Sistema"}
+                  </span>
                 </SidebarMenuButton>
               </DropdownMenuTrigger>
               <DropdownMenuContent side="right" align="start">

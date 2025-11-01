@@ -9,15 +9,23 @@ interface SearchParams {
   userId?: string
 }
 
-export default async function AdminSessionsPage({
-  searchParams,
-}: {
-  searchParams: SearchParams
+export default async function AdminSessionsPage(props: {
+  searchParams: Promise<SearchParams>
 }) {
+  const searchParams = await props.searchParams
   const headersList = await headers()
   const session = await auth.api.getSession({
     headers: headersList
   })
+
+  // Verificar role do admin
+  const currentUser = await prisma.user.findUnique({
+    where: { id: session?.user?.id },
+    include: { organization: true }
+  })
+
+  const userRoles = currentUser?.role?.split(",") || []
+  const isSuperAdmin = userRoles.some(role => role === "superadmin")
 
   // Paginação
   const page = parseInt(searchParams.page || "1")
@@ -30,7 +38,15 @@ export default async function AdminSessionsPage({
   // Construir where clause
   const where = {
     ...(userIdFilter ? { userId: userIdFilter } : {}),
-    expiresAt: { gt: new Date() } // Apenas sessões ativas
+    expiresAt: { gt: new Date() }, // Apenas sessões ativas
+    // Se não for superadmin, filtrar apenas sessões de usuários da mesma organização
+    ...(!isSuperAdmin && currentUser?.organizationId
+      ? {
+          user: {
+            organizationId: currentUser.organizationId
+          }
+        }
+      : {}),
   }
 
   // Buscar sessões com paginação

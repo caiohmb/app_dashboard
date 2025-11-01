@@ -65,6 +65,18 @@ interface User {
   banReason: string | null
   banExpires: Date | null
   createdAt: Date
+  organizationId: string | null
+  organization: {
+    id: string
+    name: string
+    slug: string
+  } | null
+}
+
+interface Organization {
+  id: string
+  name: string
+  slug: string
 }
 
 interface UsersTableProps {
@@ -74,6 +86,8 @@ interface UsersTableProps {
   totalUsers: number
   searchQuery: string
   roleFilter: string
+  isSuperAdmin: boolean
+  organizations: Organization[]
 }
 
 export function UsersTable({
@@ -83,6 +97,8 @@ export function UsersTable({
   totalUsers,
   searchQuery,
   roleFilter,
+  isSuperAdmin,
+  organizations,
 }: UsersTableProps) {
   const router = useRouter()
   const [search, setSearch] = React.useState(searchQuery)
@@ -189,6 +205,7 @@ export function UsersTable({
                 <TableHead>Usuário</TableHead>
                 <TableHead>Email</TableHead>
                 <TableHead>Role</TableHead>
+                {isSuperAdmin && <TableHead>Organização</TableHead>}
                 <TableHead>Status</TableHead>
                 <TableHead>Cadastro</TableHead>
                 <TableHead className="text-right">Ações</TableHead>
@@ -197,7 +214,7 @@ export function UsersTable({
             <TableBody>
               {users.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center">
+                  <TableCell colSpan={isSuperAdmin ? 7 : 6} className="text-center">
                     Nenhum usuário encontrado
                   </TableCell>
                 </TableRow>
@@ -217,6 +234,15 @@ export function UsersTable({
                     <TableCell>
                       <RoleBadge role={user.role || "user"} />
                     </TableCell>
+                    {isSuperAdmin && (
+                      <TableCell>
+                        {user.organization ? (
+                          <Badge variant="outline">{user.organization.name}</Badge>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">Sem organização</span>
+                        )}
+                      </TableCell>
+                    )}
                     <TableCell>
                       {user.banned ? (
                         <Badge variant="destructive">Banido</Badge>
@@ -322,8 +348,19 @@ export function UsersTable({
       </CardContent>
 
       {/* Modals */}
-      <CreateUserModal open={createModalOpen} onOpenChange={setCreateModalOpen} />
-      <EditUserModal user={selectedUser} open={editModalOpen} onOpenChange={setEditModalOpen} />
+      <CreateUserModal
+        open={createModalOpen}
+        onOpenChange={setCreateModalOpen}
+        isSuperAdmin={isSuperAdmin}
+        organizations={organizations}
+      />
+      <EditUserModal
+        user={selectedUser}
+        open={editModalOpen}
+        onOpenChange={setEditModalOpen}
+        isSuperAdmin={isSuperAdmin}
+        organizations={organizations}
+      />
       <BanUserModal user={selectedUser} open={banModalOpen} onOpenChange={setBanModalOpen} />
       <DeleteUserDialog user={selectedUser} open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen} />
     </Card>

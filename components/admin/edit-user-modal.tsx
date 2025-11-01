@@ -29,21 +29,37 @@ interface User {
   name: string
   email: string
   role: string | null
+  organizationId: string | null
+}
+
+interface Organization {
+  id: string
+  name: string
+  slug: string
 }
 
 interface EditUserModalProps {
   user: User | null
   open: boolean
   onOpenChange: (open: boolean) => void
+  isSuperAdmin: boolean
+  organizations: Organization[]
 }
 
-export function EditUserModal({ user, open, onOpenChange }: EditUserModalProps) {
+export function EditUserModal({
+  user,
+  open,
+  onOpenChange,
+  isSuperAdmin,
+  organizations,
+}: EditUserModalProps) {
   const router = useRouter()
   const [loading, setLoading] = React.useState(false)
   const [formData, setFormData] = React.useState({
     name: "",
     email: "",
-    role: "user"
+    role: "user",
+    organizationId: ""
   })
 
   React.useEffect(() => {
@@ -51,7 +67,8 @@ export function EditUserModal({ user, open, onOpenChange }: EditUserModalProps) 
       setFormData({
         name: user.name,
         email: user.email,
-        role: user.role || "user"
+        role: user.role || "user",
+        organizationId: user.organizationId || ""
       })
     }
   }, [user])
@@ -65,7 +82,8 @@ export function EditUserModal({ user, open, onOpenChange }: EditUserModalProps) 
     try {
       const result = await updateUserAction({
         userId: user.id,
-        ...formData
+        ...formData,
+        organizationId: formData.organizationId === "none" ? null : (formData.organizationId || null)
       })
 
       if (result.success) {
@@ -114,6 +132,27 @@ export function EditUserModal({ user, open, onOpenChange }: EditUserModalProps) 
                 required
               />
             </div>
+            {isSuperAdmin && organizations.length > 0 && (
+              <div className="grid gap-2">
+                <Label htmlFor="edit-organization">Organização</Label>
+                <Select
+                  value={formData.organizationId}
+                  onValueChange={(value) => setFormData({ ...formData, organizationId: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione uma organização (opcional)" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Sem organização</SelectItem>
+                    {organizations.map((org) => (
+                      <SelectItem key={org.id} value={org.id}>
+                        {org.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
             <div className="grid gap-2">
               <Label htmlFor="edit-role">Role</Label>
               <Select

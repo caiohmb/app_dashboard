@@ -31,7 +31,12 @@ model User {
   banReason  String?
   banExpires DateTime?
 
+  // Relacionamento com organização
+  organizationId String?
+  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+
   @@unique([email])
+  @@index([organizationId])
   @@map("user")
 }
 
@@ -127,4 +132,19 @@ model Verification {
   updatedAt  DateTime @default(now()) @updatedAt
 
   @@map("verification")
+}
+
+model Organization {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  description String?
+  logo        String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relacionamento com usuários
+  users User[]
+
+  @@map("organization")
 }
